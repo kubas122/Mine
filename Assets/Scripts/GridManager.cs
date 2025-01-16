@@ -8,10 +8,12 @@ public class GridManager : MonoBehaviour
     [SerializeField] private Transform gridParent;
     [SerializeField] private Slider minesSlider;
     [SerializeField] private Button betButton;
-    [SerializeField] private TextMeshProUGUI minesCountText; // Text na LeftPanel
-    [SerializeField] private TextMeshProUGUI inGameMinesText; // Text na InGamePanel
+    [SerializeField] private TMP_InputField betInputField;
+    [SerializeField] private TextMeshProUGUI minesCountText;
+    [SerializeField] private TextMeshProUGUI inGameMinesText;
     [SerializeField] private TextMeshProUGUI gemsCountText;
     [SerializeField] private TextMeshProUGUI totalProfitText;
+    [SerializeField] private TextMeshProUGUI betAmountText;
     [SerializeField] private Button cashoutButton;
     [SerializeField] private GameObject leftPanel;
     [SerializeField] private GameObject inGamePanel;
@@ -20,6 +22,7 @@ public class GridManager : MonoBehaviour
     private int numberOfMines;
     private int gemsCollected;
     private float totalProfit;
+    private float betAmount;
     private bool gameActive;
 
     private bool[,] mineGrid;
@@ -45,6 +48,12 @@ public class GridManager : MonoBehaviour
 
     public void StartGame()
     {
+        if (!float.TryParse(betInputField.text, out betAmount) || betAmount <= 0)
+        {
+            Debug.LogError("Enter a positive number.");
+            return;
+        }
+
         leftPanel.SetActive(false);
         inGamePanel.SetActive(true);
         ClearGrid();
@@ -108,6 +117,7 @@ public class GridManager : MonoBehaviour
         {
             gameActive = false;
             RevealBoard();
+            Invoke(nameof(ResetAfterLoss), 3f);
         }
         else
         {
@@ -150,18 +160,48 @@ public class GridManager : MonoBehaviour
         inGameMinesText.text = "Mines: " + numberOfMines;
         gemsCountText.text = "Gems: " + remainingGems;
         totalProfitText.text = "Total Profit: $" + totalProfit.ToString("F2");
+        betAmountText.text = "Bet: $" + betAmount.ToString("F2");
     }
 
     private float CalculateProfit()
     {
-        return gemsCollected * 0.1f * numberOfMines;
+        return betAmount * gemsCollected * 0.1f * numberOfMines;
     }
 
     private void Cashout()
     {
         gameActive = false;
-        Debug.Log("Cashout! Total profit: $" + totalProfit.ToString("F2"));
+        RevealBoard();
+        Invoke(nameof(ClearAfterCashout), 3f);
+    }
+
+    private void ClearAfterCashout()
+    {
+        ClearGrid();
+        gemsCollected = 0;
+        totalProfit = 0f;
+        betAmount = 0f;
+        inGameMinesText.text = "";
+        gemsCountText.text = "";
+        totalProfitText.text = "";
+        betAmountText.text = "";
         inGamePanel.SetActive(false);
         leftPanel.SetActive(true);
+        betInputField.text = "";
+    }
+
+    private void ResetAfterLoss()
+    {
+        ClearGrid();
+        gemsCollected = 0;
+        totalProfit = 0f;
+        betAmount = 0f;
+        inGameMinesText.text = "";
+        gemsCountText.text = "";
+        totalProfitText.text = "";
+        betAmountText.text = "";
+        inGamePanel.SetActive(false);
+        leftPanel.SetActive(true);
+        betInputField.text = "";
     }
 }
