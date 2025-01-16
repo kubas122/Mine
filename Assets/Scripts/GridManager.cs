@@ -1,20 +1,47 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class GridManager : MonoBehaviour
 {
     [SerializeField] private GameObject tilePrefab;
     [SerializeField] private Transform gridParent;
+    [SerializeField] private Slider minesSlider;
+    [SerializeField] private Button betButton;
+    [SerializeField] private TextMeshProUGUI minesCountText;
     [SerializeField] private int gridSize = 5;
-    [SerializeField] private int numberOfMines = 6;
 
+    private int numberOfMines;
     private bool[,] mineGrid;
     private GameObject[,] tileGrid;
 
     private void Start()
     {
+        numberOfMines = Mathf.RoundToInt(minesSlider.value);
+        minesSlider.onValueChanged.AddListener(UpdateMineCount);
+        UpdateMineCount(minesSlider.value);
+        betButton.interactable = true;
+    }
+
+    private void UpdateMineCount(float value)
+    {
+        numberOfMines = Mathf.RoundToInt(value);
+        minesCountText.text = numberOfMines.ToString();
+    }
+
+    public void OnBetClicked()
+    {
+        ClearGrid();
         GenerateGrid();
         PlaceMines();
+    }
+
+    private void ClearGrid()
+    {
+        foreach (Transform child in gridParent)
+        {
+            Destroy(child.gameObject);
+        }
     }
 
     private void GenerateGrid()
@@ -57,14 +84,18 @@ public class GridManager : MonoBehaviour
     {
         if (mineGrid[x, y])
         {
-            Debug.Log("Trafiono na mine!");
             RevealBoard();
         }
         else
         {
-            Debug.Log("Bezpieczne pole!");
-            tileGrid[x, y].GetComponent<Image>().color = Color.green;
+            DiscoverTile(x, y);
         }
+    }
+
+    private void DiscoverTile(int x, int y)
+    {
+        tileGrid[x, y].GetComponent<Image>().color = Color.green;
+        tileGrid[x, y].GetComponent<Button>().interactable = false;
     }
 
     private void RevealBoard()
@@ -81,6 +112,7 @@ public class GridManager : MonoBehaviour
                 {
                     tileGrid[x, y].GetComponent<Image>().color = Color.green;
                 }
+
                 tileGrid[x, y].GetComponent<Button>().interactable = false;
             }
         }
