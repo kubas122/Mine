@@ -8,10 +8,20 @@ public class GridManager : MonoBehaviour
     [SerializeField] private Transform gridParent;
     [SerializeField] private Slider minesSlider;
     [SerializeField] private Button betButton;
-    [SerializeField] private TextMeshProUGUI minesCountText;
+    [SerializeField] private TextMeshProUGUI minesCountText; // Text na LeftPanel
+    [SerializeField] private TextMeshProUGUI inGameMinesText; // Text na InGamePanel
+    [SerializeField] private TextMeshProUGUI gemsCountText;
+    [SerializeField] private TextMeshProUGUI totalProfitText;
+    [SerializeField] private Button cashoutButton;
+    [SerializeField] private GameObject leftPanel;
+    [SerializeField] private GameObject inGamePanel;
     [SerializeField] private int gridSize = 5;
 
     private int numberOfMines;
+    private int gemsCollected;
+    private float totalProfit;
+    private bool gameActive;
+
     private bool[,] mineGrid;
     private GameObject[,] tileGrid;
 
@@ -20,20 +30,30 @@ public class GridManager : MonoBehaviour
         numberOfMines = Mathf.RoundToInt(minesSlider.value);
         minesSlider.onValueChanged.AddListener(UpdateMineCount);
         UpdateMineCount(minesSlider.value);
+        betButton.onClick.AddListener(StartGame);
+        cashoutButton.onClick.AddListener(Cashout);
         betButton.interactable = true;
+        inGamePanel.SetActive(false);
     }
 
     private void UpdateMineCount(float value)
     {
         numberOfMines = Mathf.RoundToInt(value);
-        minesCountText.text = numberOfMines.ToString();
+        int gems = gridSize * gridSize - numberOfMines;
+        minesCountText.text = "Mines: " + numberOfMines + " Gems: " + gems;
     }
 
-    public void OnBetClicked()
+    public void StartGame()
     {
+        leftPanel.SetActive(false);
+        inGamePanel.SetActive(true);
         ClearGrid();
         GenerateGrid();
         PlaceMines();
+        gemsCollected = 0;
+        totalProfit = 0f;
+        UpdateInGameUI();
+        gameActive = true;
     }
 
     private void ClearGrid()
@@ -82,13 +102,19 @@ public class GridManager : MonoBehaviour
 
     private void OnTileClicked(int x, int y)
     {
+        if (!gameActive) return;
+
         if (mineGrid[x, y])
         {
+            gameActive = false;
             RevealBoard();
         }
         else
         {
+            gemsCollected++;
+            totalProfit += CalculateProfit();
             DiscoverTile(x, y);
+            UpdateInGameUI();
         }
     }
 
@@ -116,5 +142,26 @@ public class GridManager : MonoBehaviour
                 tileGrid[x, y].GetComponent<Button>().interactable = false;
             }
         }
+    }
+
+    private void UpdateInGameUI()
+    {
+        int remainingGems = gridSize * gridSize - numberOfMines - gemsCollected;
+        inGameMinesText.text = "Mines: " + numberOfMines;
+        gemsCountText.text = "Gems: " + remainingGems;
+        totalProfitText.text = "Total Profit: $" + totalProfit.ToString("F2");
+    }
+
+    private float CalculateProfit()
+    {
+        return gemsCollected * 0.1f * numberOfMines;
+    }
+
+    private void Cashout()
+    {
+        gameActive = false;
+        Debug.Log("Cashout! Total profit: $" + totalProfit.ToString("F2"));
+        inGamePanel.SetActive(false);
+        leftPanel.SetActive(true);
     }
 }
